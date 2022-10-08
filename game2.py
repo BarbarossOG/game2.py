@@ -97,8 +97,45 @@ class Enemy:
         display.blit(self.img, (self.x, self.y))
 
 
+class Boss:
+    DEFAULT_DX = 0
+    DEFAULT_DY = 0.1
+    DEFAULT_Y = 30
 
+    def __init__(self, display_size):
+        self.bound_size = self.bound_width, self.bound_height = display_size
+        self.img = pygame.image.load(RSC['img']['boss'])
+        self.width = self.img.get_width()
+        self.height = self.img.get_height()
+        self.x, self.y, self.dx, self.dy = self.create_at_random_position()
 
+    def create_at_center(self):
+        x = self.bound_width // 2 - self.width // 2
+        y = self.DEFAULT_Y
+        dx = self.DEFAULT_DX
+        dy = self.DEFAULT_DY
+        return x, y, dx, dy
+
+    def create_at_random_position(self):
+        x = random.randint(0, self.bound_width)
+        y = self.DEFAULT_Y
+        dx = random.randint(-2, 3) / 10
+        dy = random.randint(1, 3) / 20
+        return x, y, dx, dy
+
+    def model_update(self):
+        self.x += self.dx
+        self.y += self.dy
+
+    def rect(self):
+        return self.x, self.y, self.width, self.height
+
+    def into_bounds(self):
+        bound = pygame.Rect(0, 0, self.bound_width, self.bound_height)
+        return bound.contains(self.x, self.y, self.width, self.height)
+
+    def redraw(self, display):
+        display.blit(self.img, (self.x, self.y))
 
 
 class Bullet:
@@ -159,7 +196,15 @@ class Game:
             self.enemy = None
             self.bullet = None
 
+        if self.intersection(self.boss, self.bullet):
+            self.boss = None
+            self.bullet = None
 
+        if self.boss is None:
+            self.boss = Boss(self.size)
+        self.boss.model_update()
+        if not self.boss.into_bounds():
+            self.boss = None
 
         if self.bullet:
             self.bullet.model_update()
@@ -172,6 +217,9 @@ class Game:
         self.player.redraw(display)
         if self.enemy:
             self.enemy.redraw(display)
+
+        if self.boss:
+            self.boss.redraw(display)
 
         if self.bullet:
             self.bullet.redraw(display)
